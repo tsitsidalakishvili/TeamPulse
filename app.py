@@ -1,12 +1,18 @@
 import streamlit as st
 import pandas as pd
-import datetime
 import plotly.express as px
 import plotly.graph_objects as go
-from io import BytesIO
-import re
 import numpy as np
-from streamlit.components import v1 as components
+from jira import JIRA  # Import JIRA library
+
+# Set Streamlit configurations
+st.set_page_config(layout="wide")  # Use the wide layout
+
+def run():
+    if 'session_state' not in st.session_state:
+        st.session_state['session_state'] = _SessionState()
+
+    session_state = st.session_state['session_state']
 
 # Define session state
 class _SessionState:
@@ -31,15 +37,14 @@ class _SessionState:
         """Set the column name mapping."""
         self._column_mapping = column_mapping
 
-
 if 'session_state' not in st.session_state:
     st.session_state['session_state'] = _SessionState()
 
 session_state = st.session_state['session_state']
 
-st.title("Data Extractor")
+st.title("Scrum Team Pulse")
 st.sidebar.title("Follow tabs")
-tabs = ["Data Upload", "Column Selector", "Chart Creation", "Dashboard", "Examples"]  # Adding the Examples tab
+tabs = ["Data Extraction", "Data Upload", "Column Selector", "Chart Creation", "Dashboard", "Examples"]
 current_tab = st.sidebar.radio("Select tab", tabs)
 
 def assignee_median_capacity(df, assignee_name):
@@ -67,6 +72,42 @@ if current_tab == "Data Upload":
         else:
             st.warning("Failed to process the uploaded data.")
 
+elif current_tab == "Data Extraction":
+    st.sidebar.subheader("Connect to Jira Instance")
+    jira_url = st.sidebar.text_input("Jira URL", "https://ourJiraInstance.atlassian.net")
+    jira_email = st.sidebar.text_input("Jira Email", "")
+    jira_token = st.sidebar.text_input("Jira API Token", "", type="password")
+    jql_query = st.sidebar.text_area("Enter JQL Query", " ")
+
+    if st.button("Fetch Data"):
+        try:
+            # Connect to Jira using the provided credentials
+            jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
+            st.success("Connected to Jira successfully!")
+
+            # Fetch data using JQL query
+            issues = jira.search_issues(jql_query, maxResults=None)  # Adjust maxResults as needed
+
+            # Convert Jira issues to a DataFrame
+            data = []
+            for issue in issues:
+                # Customize the data extraction logic as per your requirements
+                # Example: Extract issue key, summary, and assignee
+                issue_data = {
+                    'Issue Key': issue.key,
+                    'Summary': issue.fields.summary,
+                    'Assignee': issue.fields.assignee.ame
+                    # Add more fields as needed
+                }
+                data.append(issue_data)
+
+            df = pd.DataFrame(data)
+            st.session_state['data_frame'] = df
+            st.write(df)
+            st.success("Data successfully fetched from Jira!")
+        except Exception as e:
+            st.warning(f"Error fetching data from Jira: {e}")
+            
 elif current_tab == "Column Selector":
     if 'data_frame' not in st.session_state:
         st.info("Please upload data first in the 'Data Upload' tab.")
@@ -247,19 +288,42 @@ elif current_tab == "Examples":
                 title='Average Ratio by Sprint and Assignee'
             )
 
-            # Now, let's set up the 2x2 grid layout
-            col1, col2 = st.columns(2)
+        # Adjust Plotly figure margins to 1
+        radar_chart_assignee_component.update_layout(margin=dict(t=50, b=30, l=30, r=30))
+        radar_chart_assignee_component.update_layout(margin=dict(t=45, b=45, l=45, r=45))
+        assignee_capacity_fig.update_layout(margin=dict(t=45, b=45, l=45, r=45))
+        avg_ratio_chart.update_layout(margin=dict(t=45, b=45, l=45, r=45))
+        line_chart_avg_ratio.update_layout(margin=dict(t=45, b=45, l=45, r=45))
 
-            # 1st Chart
-            with col1:
-                st.plotly_chart(radar_chart_assignee_component, use_container_width=True)
-                st.plotly_chart(avg_ratio_chart, use_container_width=True)
 
-            # 2nd Chart
-            with col2:
-                st.plotly_chart(assignee_capacity_fig,use_container_width=True)
-                st.plotly_chart(line_chart_avg_ratio,use_container_width=True)
 
-           
+
+        # Setting up the 2x2 grid layout using Streamlit's columns
+        col1, col2 = st.columns(2)
+
+        # 1st Row: First two charts
+        with col1:
+            st.plotly_chart(radar_chart_assignee_component, use_container_width=True)
+        with col2:
+            st.plotly_chart(assignee_capacity_fig, use_container_width=True)
+
+        # Use st.empty() for spacing adjustment (if needed)
+        st.empty()
+
+        # 2nd Row: Last two charts
+        with col1:
+            st.plotly_chart(avg_ratio_chart, use_container_width=True)
+        with col2:
+            st.plotly_chart(line_chart_avg_ratio, use_container_width=True)
+
     else:
         st.warning("Please upload and process the data first before accessing the examples.")
+
+if __name__ == "__main__":
+    run()
+
+
+
+
+
+
