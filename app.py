@@ -51,7 +51,7 @@ if 'session_state' not in st.session_state:
 
 session_state = st.session_state['session_state']
 
-st.title("Scrum Team Performance")
+st.title("Scrum Team Pulse")
 st.sidebar.title("Follow tabs")
 
 
@@ -94,31 +94,31 @@ if current_tab == "Data":
     elif data_source == "Use Sample Data":
         # Load sample data from a repository or any other source
         # Replace the following line with code to load sample data
-        df = pd.read_csv(r'sample_data/sample_data.csv')
+        df = pd.read_csv(r'C:\Users\dalak\OneDrive\Desktop\ScrumTeam\sample data\sample_data.csv')
         st.session_state['data_frame'] = df
         st.write(df)
         st.success("Sample data loaded successfully!")
 
 
 
-    # Add a button to compute similarity
-    if st.button("Compute Similarity"):
-        df = preprocess_data(df)
+        # Create an expander for the similarity functionality
+        with st.expander("Similarity Functionality"):
+            # Compute similarity and display results
+            st.subheader("Similarity Results")
 
-        # Compute similarity and display results
-        threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.2, 0.05)  # Add a threshold slider
-        st.subheader("Similarity Results")
-        
-        # Get the summary texts from the DataFrame
-        summaries = df['clean_text'].tolist()  # Make sure 'clean_text' is available
-        
-        # Call the calculate_similarity function
-        similar_pairs = calculate_similarity(df, threshold)
-        
-        # Display the threshold and the table with the pairs for the current threshold
-        st.subheader(f"Similarity Threshold: {threshold}")
-        st.dataframe(similar_pairs)
+            # Add a slider for the similarity threshold
+            threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.2, 0.05)  # Add a step parameter of 0.05
 
+            # Wrap this code inside a Streamlit reactive block
+            if st.checkbox("Update Similarity Based on Threshold"):
+                df = preprocess_data(df)
+
+                # Call the calculate_similarity function
+                similar_pairs = calculate_similarity(df, threshold)
+
+                # Display the threshold and the table with the pairs for the current threshold
+                st.subheader(f"Similarity Threshold: {threshold}")
+                st.dataframe(similar_pairs)
 
 
     elif data_source == "Connect to Jira Instance":
