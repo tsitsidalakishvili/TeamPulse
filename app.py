@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import numpy as np
 from jira import JIRA  # Import JIRA library
 
@@ -44,7 +43,7 @@ session_state = st.session_state['session_state']
 
 st.title("Scrum Team Pulse")
 st.sidebar.title("Follow tabs")
-tabs = ["Data Extraction", "Data Upload", "Column Selector", "Chart Creation", "Dashboard", "Examples"]
+tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
 current_tab = st.sidebar.radio("Select tab", tabs)
 
 def assignee_median_capacity(df, assignee_name):
@@ -60,54 +59,67 @@ def read_csv_files(uploaded_file):
         st.warning(f"Error reading the file: {e}")
         return None
 
-if current_tab == "Data Upload":
-    uploaded_file = st.file_uploader("Upload CSV File", type=['csv'])
 
-    if uploaded_file:
-        df = read_csv_files(uploaded_file)
-        if df is not None:
+
+
+if current_tab == "Data":
+    # Create a radio button to choose the data source
+    data_source = st.radio("Choose Data Source", ["Upload CSV", "Use Sample Data", "Connect to Jira Instance"])
+
+    if data_source == "Upload CSV":
+        uploaded_file = st.file_uploader("Upload CSV File", type=['csv'])
+
+        if uploaded_file:
+            df = pd.read_csv(uploaded_file, encoding='iso-8859-1')
             st.session_state['data_frame'] = df
             st.write(df)
             st.success("Data successfully uploaded!")
-        else:
-            st.warning("Failed to process the uploaded data.")
 
-elif current_tab == "Data Extraction":
-    st.sidebar.subheader("Connect to Jira Instance")
-    jira_url = st.sidebar.text_input("Jira URL", "https://ourJiraInstance.atlassian.net")
-    jira_email = st.sidebar.text_input("Jira Email", "")
-    jira_token = st.sidebar.text_input("Jira API Token", "", type="password")
-    jql_query = st.sidebar.text_area("Enter JQL Query", " ")
+    elif data_source == "Use Sample Data":
+        # Load sample data from a repository or any other source
+        # Replace the following line with code to load sample data
+        df = pd.read_csv(r'C:\Users\dalak\OneDrive\Desktop\ScrumTeam\sample data\sample_data.csv')
+        st.session_state['data_frame'] = df
+        st.write(df)
+        st.success("Sample data loaded successfully!")
 
-    if st.button("Fetch Data"):
-        try:
-            # Connect to Jira using the provided credentials
-            jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
-            st.success("Connected to Jira successfully!")
+    elif data_source == "Connect to Jira Instance":
+        jira_url = st.text_input("Jira URL", "https://ourJiraInstance.atlassian.net")
+        jira_email = st.text_input("Jira Email", "")
+        jira_token = st.text_input("Jira API Token", "", type="password")
+        jql_query = st.text_area("Enter JQL Query", " ")
 
-            # Fetch data using JQL query
-            issues = jira.search_issues(jql_query, maxResults=None)  # Adjust maxResults as needed
+        if st.button("Fetch Data"):
+            try:
+                # Connect to Jira using the provided credentials
+                jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
+                st.success("Connected to Jira successfully!")
 
-            # Convert Jira issues to a DataFrame
-            data = []
-            for issue in issues:
-                # Customize the data extraction logic as per your requirements
-                # Example: Extract issue key, summary, and assignee
-                issue_data = {
-                    'Issue Key': issue.key,
-                    'Summary': issue.fields.summary,
-                    'Assignee': issue.fields.assignee.ame
-                    # Add more fields as needed
-                }
-                data.append(issue_data)
+                # Fetch data using JQL query
+                issues = jira.search_issues(jql_query, maxResults=None)  # Adjust maxResults as needed
 
-            df = pd.DataFrame(data)
-            st.session_state['data_frame'] = df
-            st.write(df)
-            st.success("Data successfully fetched from Jira!")
-        except Exception as e:
-            st.warning(f"Error fetching data from Jira: {e}")
-            
+                # Convert Jira issues to a DataFrame
+                data = []
+                for issue in issues:
+                    # Customize the data extraction logic as per your requirements
+                    # Example: Extract issue key, summary, and assignee
+                    issue_data = {
+                        'Issue Key': issue.key,
+                        'Summary': issue.fields.summary,
+                        'Assignee': issue.fields.assignee.name  # Fix the typo here (change '.ame' to '.name')
+                        # Add more fields as needed
+                    }
+                    data.append(issue_data)
+
+                df = pd.DataFrame(data)
+                st.session_state['data_frame'] = df
+                st.write(df)
+                st.success("Data successfully fetched from Jira!")
+            except Exception as e:
+                st.warning(f"Error fetching data from Jira: {e}")
+
+
+         
 elif current_tab == "Column Selector":
     if 'data_frame' not in st.session_state:
         st.info("Please upload data first in the 'Data Upload' tab.")
@@ -234,9 +246,44 @@ elif current_tab == "Dashboard":
 
 
 
+elif current_tab == "Template Team Performance":
+    if 'data_frame' not in st.session_state:
+        st.info("Please upload data first in the 'Data Upload' tab.")
+    else:
+        data_frame = st.session_state['data_frame']
+
+        st.subheader("Team Average Ratio by Sprint")
+
+        # Line Chart - Team Average Ratio by Sprint
+        team_avg_ratio_by_sprint = data_frame.groupby('Sprint')['Avg_Ratio'].mean().reset_index()
+        team_avg_ratio_by_sprint_chart = px.line(
+            team_avg_ratio_by_sprint,
+            x='Sprint',
+            y='Avg_Ratio',
+            title='Team Average Ratio by Sprint',
+            labels={'Avg_Ratio': 'Average Ratio', 'Sprint': 'Sprint'},
+        )
+
+        st.plotly_chart(team_avg_ratio_by_sprint_chart, use_container_width=True)
+
+        st.subheader("Team Capacity in Sprint")
+
+        # Horizontal Bar Chart - Team Capacity in Sprint
+        team_capacity_by_sprint = data_frame.groupby('Sprint')['Assignee Capacity'].sum().reset_index()
+        team_capacity_by_sprint_chart = px.bar(
+            team_capacity_by_sprint,
+            x='Assignee Capacity',
+            y='Sprint',
+            orientation='h',
+            title='Team Capacity in Sprint',
+            labels={'Assignee Capacity': 'Capacity', 'Sprint': 'Sprint'},
+        )
+
+        st.plotly_chart(team_capacity_by_sprint_chart, use_container_width=True)
 
 
-elif current_tab == "Examples":
+
+elif current_tab == "Template Individual Performance":
     if 'data_frame' in st.session_state:
         df = st.session_state['data_frame']
 
@@ -318,6 +365,7 @@ elif current_tab == "Examples":
 
     else:
         st.warning("Please upload and process the data first before accessing the examples.")
+
 
 if __name__ == "__main__":
     run()
