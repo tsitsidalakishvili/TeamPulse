@@ -43,7 +43,6 @@ session_state = st.session_state['session_state']
 
 st.title("Scrum Team Pulse")
 st.sidebar.title("Follow tabs")
-st.markdown("Created by [Tsitsi Dalakishvili](https://www.linkedin.com/in/tsitsi-dalakishvili/)")
 tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
 current_tab = st.sidebar.radio("Select tab", tabs)
 
