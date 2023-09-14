@@ -9,7 +9,7 @@ import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from similarity import preprocess_data, calculate_similarity
-
+import requests
 
 # Download stopwords if not already downloaded
 nltk.download('stopwords')
@@ -56,9 +56,9 @@ st.sidebar.title("Follow tabs")
 
 
 
-
 tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
 current_tab = st.sidebar.radio("Select tab", tabs)
+
 
 def assignee_median_capacity(df, assignee_name):
     # Assuming a median story points computation is based on the 'Story Points' column
@@ -94,7 +94,7 @@ if current_tab == "Data":
     elif data_source == "Use Sample Data":
         # Load sample data from a repository or any other source
         # Replace the following line with code to load sample data
-        df = pd.read_csv(r'sample_data/sample_data.csv')
+        df = pd.read_csv(r'C:\Users\dalak\OneDrive\Desktop\ScrumTeam\sample data\sample_data.csv')
         st.session_state['data_frame'] = df
         st.write(df)
         st.success("Sample data loaded successfully!")
@@ -192,93 +192,116 @@ elif current_tab == "Column Selector":
             if st.button("Update Data Frame"):
                 st.session_state['data_frame'] = new_data_frame
 
+# ...
+
 elif current_tab == "Chart Creation":
     if 'data_frame' not in st.session_state:
         st.info("Please upload data first in the 'Data Upload' tab.")
     else:
-        data_frame = st.session_state['data_frame']
+        # ChatGPT Integration Extender
+        with st.expander("Use LLM for creating charts"):
+            # Create an input text box for user questions
+            user_question = st.text_input("Enter your question:")
 
-        column_mapping = session_state.get_column_mapping()
-        for old_column, new_column in column_mapping.items():
-            if old_column in data_frame.columns:
-                data_frame = data_frame.rename(columns={old_column: new_column})
+            if st.button("Submit"):
+                # Define the payload to send to Node-RED
+                payload = {
+                    "question": user_question,
+                    "topic": ""
+                }
 
-        column_x = st.selectbox("Select X-axis variable", data_frame.columns)
-        column_y = st.selectbox("Select Y-axis variable", data_frame.columns)
-        chart_type = st.selectbox("Select chart type", ['Bar', 'Line', 'Scatter', 'Histogram', 'Pie'])
+                # Send a POST request to your Node-RED flow
+                response = requests.post("http://127.0.0.1:1880/chatgpt", json=payload)
 
-        # Color Grouping
-        # Using 'Choose legend' and adding a tooltip for clarity
-        column_color = st.selectbox("Choose legend", ['None'] + list(data_frame.columns), help="Select a column to differentiate data by color on the chart.")
-        
-        # Hover Data
-        hover_data = st.multiselect("Select additional columns for hover data", data_frame.columns, default=[])
+                # Check if the response was successful and display ChatGPT's response
+                if response.status_code == 200:
+                    chatgpt_response = response.json()
+                    answer = chatgpt_response["answer"]
+                    st.write("ChatGPT's Answer:", answer)
+                else:
+                    st.write("Error communicating with ChatGPT")
 
-        # Facet Charts
-        facet_col = st.selectbox("Choose column for faceting (creates multiple charts)", ['None'] + list(data_frame.columns))
+        # Create chart yourself Extender
+        with st.expander("Create chart yourself"):
+            data_frame = st.session_state['data_frame']
 
-        # Scatter size
-        scatter_size = None
-        if chart_type == 'Scatter':
-            scatter_size = st.selectbox("Choose column for scatter point size (Optional)", ['None'] + list(data_frame.columns))
+            column_mapping = session_state.get_column_mapping()
+            for old_column, new_column in column_mapping.items():
+                if old_column in data_frame.columns:
+                    data_frame = data_frame.rename(columns={old_column: new_column})
 
+            column_x = st.selectbox("Select X-axis variable", data_frame.columns)
+            column_y = st.selectbox("Select Y-axis variable", data_frame.columns)
+            chart_type = st.selectbox("Select chart type", ['Bar', 'Line', 'Scatter', 'Histogram', 'Pie'])
 
-        # Summation of a specific column
-        if st.checkbox("Display sum of a column"):
-            column_to_sum = st.selectbox("Select column to sum", data_frame.select_dtypes(include=[np.number]).columns)
-            if column_to_sum:
-                summed_value = data_frame[column_to_sum].sum()
-                st.markdown(f"**Total sum of {column_to_sum}:** {summed_value}")
-                
-                # Optional: Visualize the sum
-                if st.checkbox("Visualize the sum"):
-                    fig_sum = px.bar(x=[column_to_sum], y=[summed_value], title=f"Total sum of {column_to_sum}")
-                    st.plotly_chart(fig_sum)
+            # Color Grouping
+            # Using 'Choose legend' and adding a tooltip for clarity
+            column_color = st.selectbox("Choose legend", ['None'] + list(data_frame.columns), help="Select a column to differentiate data by color on the chart.")
+            
+            # Hover Data
+            hover_data = st.multiselect("Select additional columns for hover data", data_frame.columns, default=[])
 
+            # Facet Charts
+            facet_col = st.selectbox("Choose column for faceting (creates multiple charts)", ['None'] + list(data_frame.columns))
 
-            title = st.text_input("Chart Title", "Your Chart Title")
-            x_axis_label = st.text_input("X-axis Label", column_x)
-            y_axis_label = st.text_input("Y-axis Label", column_y)
+            # Scatter size
+            scatter_size = None
+            if chart_type == 'Scatter':
+                scatter_size = st.selectbox("Choose column for scatter point size (Optional)", ['None'] + list(data_frame.columns))
 
-            if chart_type == 'Bar':
-                fig = px.bar(data_frame, x=column_x, y=column_y, color=column_color if column_color != 'None' else None, 
-                            hover_data=hover_data, facet_col=facet_col if facet_col != 'None' else None,
-                            title=title, labels={'x': x_axis_label, 'y': y_axis_label})
+            # Summation of a specific column
+            if st.checkbox("Display sum of a column"):
+                column_to_sum = st.selectbox("Select column to sum", data_frame.select_dtypes(include=[np.number]).columns)
+                if column_to_sum:
+                    summed_value = data_frame[column_to_sum].sum()
+                    st.markdown(f"**Total sum of {column_to_sum}:** {summed_value}")
+                    
+                    # Optional: Visualize the sum
+                    if st.checkbox("Visualize the sum"):
+                        fig_sum = px.bar(x=[column_to_sum], y=[summed_value], title=f"Total sum of {column_to_sum}")
+                        st.plotly_chart(fig_sum)
 
-            elif chart_type == 'Line':
-                fig = px.line(data_frame, x=column_x, y=column_y, color=column_color if column_color != 'None' else None, 
-                            hover_data=hover_data, facet_col=facet_col if facet_col != 'None' else None,
-                            title=title, labels={'x': x_axis_label, 'y': y_axis_label})
+                title = st.text_input("Chart Title", "Your Chart Title")
+                x_axis_label = st.text_input("X-axis Label", column_x)
+                y_axis_label = st.text_input("Y-axis Label", column_y)
 
-            elif chart_type == 'Scatter':
-                scatter_size_data = None
-                if scatter_size and scatter_size != 'None':
-                    if pd.api.types.is_numeric_dtype(data_frame[scatter_size]):
-                        scatter_size_data = data_frame[scatter_size]
-                    else:
-                        st.warning(f"Column {scatter_size} is not numeric. Size won't be applied to scatter plot.")
-                        
-                fig = px.scatter(data_frame, x=column_x, y=column_y, 
-                                color=column_color if column_color != 'None' else None,
-                                hover_data=hover_data, 
-                                facet_col=facet_col if facet_col != 'None' else None,
-                                size=scatter_size_data,  # Use the validated scatter size data here
+                if chart_type == 'Bar':
+                    fig = px.bar(data_frame, x=column_x, y=column_y, color=column_color if column_color != 'None' else None, 
+                                hover_data=hover_data, facet_col=facet_col if facet_col != 'None' else None,
                                 title=title, labels={'x': x_axis_label, 'y': y_axis_label})
 
+                elif chart_type == 'Line':
+                    fig = px.line(data_frame, x=column_x, y=column_y, color=column_color if column_color != 'None' else None, 
+                                hover_data=hover_data, facet_col=facet_col if facet_col != 'None' else None,
+                                title=title, labels={'x': x_axis_label, 'y': y_axis_label})
 
+                elif chart_type == 'Scatter':
+                    scatter_size_data = None
+                    if scatter_size and scatter_size != 'None':
+                        if pd.api.types.is_numeric_dtype(data_frame[scatter_size]):
+                            scatter_size_data = data_frame[scatter_size]
+                        else:
+                            st.warning(f"Column {scatter_size} is not numeric. Size won't be applied to scatter plot.")
+                            
+                    fig = px.scatter(data_frame, x=column_x, y=column_y, 
+                                    color=column_color if column_color != 'None' else None,
+                                    hover_data=hover_data, 
+                                    facet_col=facet_col if facet_col != 'None' else None,
+                                    size=scatter_size_data,  # Use the validated scatter size data here
+                                    title=title, labels={'x': x_axis_label, 'y': y_axis_label})
 
-            elif chart_type == 'Histogram':
-                fig = px.histogram(data_frame, x=column_x, color=column_color if column_color != 'None' else None,
-                                hover_data=hover_data, title=title, labels={'x': x_axis_label, 'y': y_axis_label})
+                elif chart_type == 'Histogram':
+                    fig = px.histogram(data_frame, x=column_x, color=column_color if column_color != 'None' else None,
+                                    hover_data=hover_data, title=title, labels={'x': x_axis_label, 'y': y_axis_label})
 
-            elif chart_type == 'Pie':
-                fig = px.pie(data_frame, names=column_x, values=column_y, title=title)
+                elif chart_type == 'Pie':
+                    fig = px.pie(data_frame, names=column_x, values=column_y, title=title)
 
-            st.plotly_chart(fig)
+                st.plotly_chart(fig)
 
-            if st.button("Add to dashboard"):
-                session_state.add_chart(fig)
-                st.success("Chart added to the dashboard!")
+                if st.button("Add to dashboard"):
+                    session_state.add_chart(fig)
+                    st.success("Chart added to the dashboard!")
 
 
 elif current_tab == "Dashboard":
@@ -327,7 +350,6 @@ elif current_tab == "Template Team Performance":
         )
 
         st.plotly_chart(team_capacity_by_sprint_chart, use_container_width=True)
-
 
 
 elif current_tab == "Template Individual Performance":
