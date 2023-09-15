@@ -15,3 +15,5 @@ matplotlib==3.4.3
 streamlit-elements==0.1
 altair
 pandas_profiling
+streamlit_pandas_profiling
+
