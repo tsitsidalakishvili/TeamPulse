@@ -11,12 +11,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from similarity import preprocess_data, calculate_similarity
 import requests
 import subprocess
-import pandas as pd
 
-import pandas_profiling
 
-#import streamlit_pandas_profiling
+import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
+
 
 
 # Download stopwords if not already downloaded
