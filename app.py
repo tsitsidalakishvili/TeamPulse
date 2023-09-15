@@ -10,6 +10,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from similarity import preprocess_data, calculate_similarity
 import requests
+import subprocess
+import pandas as pd
+import pandas_profiling
+import streamlit as st
+
+from streamlit_pandas_profiling import st_profile_report
 
 # Download stopwords if not already downloaded
 nltk.download('stopwords')
@@ -52,12 +58,30 @@ if 'session_state' not in st.session_state:
 session_state = st.session_state['session_state']
 
 st.title("Scrum Team Pulse")
+
+
 st.sidebar.title("Follow tabs")
-
-
 
 tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
 current_tab = st.sidebar.radio("Select tab", tabs)
+
+
+tab_descriptions = {
+    "Data": "In the Data tab, you can upload your project data or connect to your Jira instance to fetch real-time data.",
+    "Column Selector": "The Column Selector tab allows you to rename and select columns for your analysis.",
+    "Chart Creation": "In the Chart Creation tab, you can create charts to visualize your project's progress using AI assistance or by creating charts yourself.",
+    "Dashboard": "The Dashboard tab displays all the charts you've created, providing an overview of your project.",
+    "Template Individual Performance": "This tab offers pre-designed charts and insights to assess individual performance.",
+    "Template Team Performance": "Here, you can access pre-designed charts to assess your team's performance efficiently."
+}
+
+# Create an expander for the tab description
+with st.sidebar.expander("Tab Description"):
+    if current_tab in tab_descriptions:
+        st.write(tab_descriptions[current_tab])
+
+
+
 
 
 def assignee_median_capacity(df, assignee_name):
@@ -91,13 +115,19 @@ if current_tab == "Data":
             st.write(df)
             st.success("Data successfully uploaded!")
 
+            with st.expander("Profile data"):
+                pr = df.profile_report()
+                st_profile_report(pr)
+
     elif data_source == "Use Sample Data":
         # Load sample data from a repository or any other source
         # Replace the following line with code to load sample data
-        df = pd.read_csv(r'sample_data/sample_data.csv')
+        df = pd.read_csv(r'C:\Users\dalak\OneDrive\Desktop\ScrumTeam\sample data\sample_data.csv')
         st.session_state['data_frame'] = df
         st.write(df)
         st.success("Sample data loaded successfully!")
+
+
 
 
 
@@ -192,14 +222,13 @@ elif current_tab == "Column Selector":
             if st.button("Update Data Frame"):
                 st.session_state['data_frame'] = new_data_frame
 
-# ...
 
 elif current_tab == "Chart Creation":
     if 'data_frame' not in st.session_state:
         st.info("Please upload data first in the 'Data Upload' tab.")
     else:
         # ChatGPT Integration Extender
-        with st.expander("Use LLM for creating charts"):
+        with st.expander("Use AI Assistance (LLM)"):
             # Create an input text box for user questions
             user_question = st.text_input("Enter your question:")
 
@@ -220,6 +249,14 @@ elif current_tab == "Chart Creation":
                     st.write("ChatGPT's Answer:", answer)
                 else:
                     st.write("Error communicating with ChatGPT")
+            # Inside the "Chart Creation" tab
+            if st.button("Plot Chart"):
+                # Send a request to Node-RED to trigger the data manipulation and chart generation
+                response = requests.post("http://127.0.0.1:1880/trigger-data-manipulation")
+                if response.status_code == 200:
+                    st.success("Chart plotted successfully!")
+                else:
+                    st.error("Error plotting the chart. Please try again.")
 
         # Create chart yourself Extender
         with st.expander("Create chart yourself"):
@@ -451,5 +488,18 @@ st.sidebar.markdown("Created by [Tsitsi Dalakishvili](https://www.linkedin.com/i
 
 
 
+if 'command' in st.session_state:
+    command = st.session_state['command']
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    st.session_state['command_result'] = {
+        'returncode': result.returncode,
+        'stdout': result.stdout.decode('utf-8'),
+        'stderr': result.stderr.decode('utf-8'),
+    }
 
-
+if 'command_result' in st.session_state:
+    result = st.session_state['command_result']
+    st.subheader("Command Execution Result")
+    st.write(f"Return Code: {result['returncode']}")
+    st.write(f"Standard Output:\n{result['stdout']}")
+    st.write(f"Standard Error:\n{result['stderr']}")
