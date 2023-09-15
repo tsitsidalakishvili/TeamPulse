@@ -16,7 +16,6 @@ streamlit-elements==0.1
 altair
 streamlit_pandas_profiling
 
-pandas_profiling
 
 # Core
 streamlit
@@ -31,6 +30,7 @@ streamlit-player
 streamlit-quill
 
 # Dependencies
-pandas-profiling
+pandas-profiling==3.0.0
+visions>=0.7.1
 requests
 streamlit_pandas_profiling==0.0.4
