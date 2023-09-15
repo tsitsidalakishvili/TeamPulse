@@ -13,6 +13,8 @@ import requests
 import subprocess
 import pandas as pd
 import streamlit as st
+import pandas_profiling
+
 
 
 # Download stopwords if not already downloaded
