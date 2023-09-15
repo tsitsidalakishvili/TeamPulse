@@ -130,7 +130,7 @@ if current_tab == "Data":
     elif data_source == "Use Sample Data":
         # Load sample data from a repository or any other source
         # Replace the following line with code to load sample data
-        df = pd.read_csv(r'C:\Users\dalak\OneDrive\Desktop\ScrumTeam\sample data\sample_data.csv')
+        df = pd.read_csv(r'sample_data/sample_data.csv')
         st.session_state['data_frame'] = df
         st.write(df)
         st.success("Sample data loaded successfully!")
