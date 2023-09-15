@@ -16,4 +16,4 @@ streamlit-elements==0.1
 altair
 streamlit_pandas_profiling
 
-pandas_profiling==x.y.z
+pandas_profiling==2.11.0 
