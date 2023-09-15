@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
+import pandas_profiling  # Import pandas-profiling
 import plotly.express as px
 import numpy as np
-from jira import JIRA  # Import JIRA library
+from jira import JIRA
 import nltk
 from nltk.corpus import stopwords
 import re
@@ -11,11 +12,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from similarity import preprocess_data, calculate_similarity
 import requests
 import subprocess
-import pandas_profiling
+import pandas as pd
 
-import pandas_profiling
-
+import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
+
+# ... Rest of your code ...
 
 
 
@@ -119,7 +121,11 @@ if current_tab == "Data":
 
             with st.expander("Profile data"):
                 pr = df.profile_report()
-                st_profile_report(pr)
+                st.components.v1.html(pr.to_html(), width=900, height=600, scrolling=True)
+
+
+
+
 
     elif data_source == "Use Sample Data":
         # Load sample data from a repository or any other source
