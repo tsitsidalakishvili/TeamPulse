@@ -17,3 +17,19 @@ altair
 streamlit_pandas_profiling
 
 pandas_profiling==2.11.0 
+
+# Core
+streamlit
+
+# Streamlit components
+streamlit-ace
+streamlit-discourse
+streamlit-disqus
+streamlit-elements
+streamlit-pandas-profiling
+streamlit-player
+streamlit-quill
+
+# Dependencies
+pandas-profiling
+requests
