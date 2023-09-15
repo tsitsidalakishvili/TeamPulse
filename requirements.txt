@@ -22,3 +22,6 @@ streamlit-elements==0.1.
 
 
 altair
+
+pandas_profiling
+
