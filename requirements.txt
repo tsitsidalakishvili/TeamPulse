@@ -15,22 +15,4 @@ matplotlib==3.4.3
 streamlit-elements==0.1
 altair
 streamlit_pandas_profiling
-
-
-# Core
-streamlit
-
-# Streamlit components
-streamlit-ace
-streamlit-discourse
-streamlit-disqus
-streamlit-elements
-streamlit-pandas-profiling
-streamlit-player
-streamlit-quill
-
-# Dependencies
-pandas-profiling==3.0.0
-visions>=0.7.1
-requests
-streamlit_pandas_profiling==0.0.4
+pydantic-settings
