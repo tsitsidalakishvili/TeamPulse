@@ -65,8 +65,7 @@ st.title("Scrum Team Pulse")
 
 st.sidebar.title("Follow tabs")
 
-tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
-current_tab = st.sidebar.radio("Select tab", tabs)
+
 
 
 
