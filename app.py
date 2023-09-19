@@ -65,41 +65,23 @@ st.title("Scrum Team Pulse")
 
 st.sidebar.title("Follow tabs")
 
+tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
+current_tab = st.sidebar.radio("Select tab", tabs)
 
 
-
-
-# Define your tab descriptions
 tab_descriptions = {
     "Data": "In the Data tab, you have the option to upload your project data, establish a connection to your Jira instance for real-time data retrieval, or utilize a sample dataset for exploratory purposes. Additionally, Pandas Profiling is available to facilitate comprehensive data understanding.",
-    "Column Selector": "The Column Selector tab allows you to rename and select columns for your analysis. Furthermore, you can update the data frame based on your selected columns and seamlessly continue your analysis with the new dataframe.",
+    "Column Selector": "The Column Selector tab allows you to rename and select columns for your analysis. Furthermore, you can update the data frame based on your selected columns and seamlessly continue your analysis with the new dataframe",
     "Chart Creation": "In the Chart Creation tab, you can create charts to visualize your project's progress using AI assistance or by creating charts yourself.",
     "Dashboard": "The Dashboard tab displays all the charts you've created, providing an overview of your project.",
     "Template Individual Performance": "This tab offers pre-designed charts and insights to assess individual performance.",
     "Template Team Performance": "Here, you can access pre-designed charts to assess your team's performance efficiently."
 }
 
-# Sidebar with tab titles
-st.sidebar.title("Follow tabs")
-
-tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
-current_tab = st.sidebar.radio("Select tab", tabs)
-
-# Define a function to create a tooltip-like effect for the tab descriptions
-def display_tooltip(tab_name, description):
-    st.write(tab_name)
-    tooltip = f"""
-    <div class="tooltip">
-        {description}
-    </div>
-    """
-    st.markdown(tooltip, unsafe_allow_html=True)
-
-# Display tab descriptions when hovering over tab titles
-if current_tab in tab_descriptions:
-    display_tooltip(current_tab, tab_descriptions[current_tab])
-
-
+# Create an expander for the tab description
+with st.sidebar.expander("Tab Description"):
+    if current_tab in tab_descriptions:
+        st.write(tab_descriptions[current_tab])
 
 
 
