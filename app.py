@@ -17,7 +17,6 @@ import pandas as pd
 import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
-# ... Rest of your code ...
 
 
 
@@ -229,6 +228,9 @@ elif current_tab == "Column Selector":
             st.dataframe(new_data_frame)
             if st.button("Update Data Frame"):
                 st.session_state['data_frame'] = new_data_frame
+
+        st.subheader("Column Selector")
+        st.write(tab_descriptions["Column Selector"])
 
 
 elif current_tab == "Chart Creation":
