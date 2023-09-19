@@ -71,7 +71,7 @@ current_tab = st.sidebar.radio("Select tab", tabs)
 
 
 tab_descriptions = {
-    "Data": "In the Data tab, you can upload your project data or connect to your Jira instance to fetch real-time data.",
+    "Data": "In the Data tab, you have the option to upload your project data, establish a connection to your Jira instance for real-time data retrieval, or utilize a sample dataset for exploratory purposes. Additionally, Pandas Profiling is available to facilitate comprehensive data understanding.",
     "Column Selector": "The Column Selector tab allows you to rename and select columns for your analysis.",
     "Chart Creation": "In the Chart Creation tab, you can create charts to visualize your project's progress using AI assistance or by creating charts yourself.",
     "Dashboard": "The Dashboard tab displays all the charts you've created, providing an overview of your project.",
