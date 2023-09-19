@@ -229,8 +229,7 @@ elif current_tab == "Column Selector":
             if st.button("Update Data Frame"):
                 st.session_state['data_frame'] = new_data_frame
 
-        st.subheader("Column Selector")
-        st.write(tab_descriptions["Column Selector"])
+
 
 
 elif current_tab == "Chart Creation":
