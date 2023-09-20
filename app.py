@@ -264,16 +264,6 @@ elif current_tab == "Chart Creation":
 
 
 
-
-            # Inside the "Chart Creation" tab
-            if st.button("Plot Chart"):
-                # Send a request to Node-RED to trigger the data manipulation and chart generation
-                response = requests.post("http://127.0.0.1:1880/trigger-data-manipulation")
-                if response.status_code == 200:
-                    st.success("Chart plotted successfully!")
-                else:
-                    st.error("Error plotting the chart. Please try again.")
-
         # Create chart yourself Extender
         with st.expander("Create chart yourself"):
             data_frame = st.session_state['data_frame']
