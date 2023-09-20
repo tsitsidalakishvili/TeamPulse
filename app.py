@@ -17,6 +17,7 @@ import pandas as pd
 import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
+# ... Rest of your code ...
 
 
 
@@ -103,60 +104,41 @@ def read_csv_files(uploaded_file):
 
 
 
+def profile_data_func(df):
+    with st.expander("Profile data"):
+        pr = df.profile_report()
+        st.components.v1.html(pr.to_html(), width=900, height=600, scrolling=True)
 
+def similarity_func(df):
+    with st.expander("Similarity Functionality"):
+        st.subheader("Similarity Results")
+        threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.2, 0.05)
+        if st.checkbox("Update Similarity Based on Threshold"):
+            df = preprocess_data(df)
+            similar_pairs = calculate_similarity(df, threshold)
+            st.subheader(f"Similarity Threshold: {threshold}")
+            st.dataframe(similar_pairs)
 
 if current_tab == "Data":
-    # Create a radio button to choose the data source
     data_source = st.radio("Choose Data Source", ["Upload CSV", "Use Sample Data", "Connect to Jira Instance"])
 
     if data_source == "Upload CSV":
         uploaded_file = st.file_uploader("Upload CSV File", type=['csv'])
-
         if uploaded_file:
             df = pd.read_csv(uploaded_file, encoding='iso-8859-1')
             st.session_state['data_frame'] = df
             st.write(df)
             st.success("Data successfully uploaded!")
-
-            with st.expander("Profile data"):
-                pr = df.profile_report()
-                st.components.v1.html(pr.to_html(), width=900, height=600, scrolling=True)
-
-
-
-
+            profile_data_func(df)
+            similarity_func(df)
 
     elif data_source == "Use Sample Data":
-        # Load sample data from a repository or any other source
-        # Replace the following line with code to load sample data
         df = pd.read_csv(r'sample_data/sample_data.csv')
         st.session_state['data_frame'] = df
         st.write(df)
         st.success("Sample data loaded successfully!")
-
-
-
-
-
-        # Create an expander for the similarity functionality
-        with st.expander("Similarity Functionality"):
-            # Compute similarity and display results
-            st.subheader("Similarity Results")
-
-            # Add a slider for the similarity threshold
-            threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.2, 0.05)  # Add a step parameter of 0.05
-
-            # Wrap this code inside a Streamlit reactive block
-            if st.checkbox("Update Similarity Based on Threshold"):
-                df = preprocess_data(df)
-
-                # Call the calculate_similarity function
-                similar_pairs = calculate_similarity(df, threshold)
-
-                # Display the threshold and the table with the pairs for the current threshold
-                st.subheader(f"Similarity Threshold: {threshold}")
-                st.dataframe(similar_pairs)
-
+        profile_data_func(df)
+        similarity_func(df)
 
     elif data_source == "Connect to Jira Instance":
         jira_url = st.text_input("Jira URL", "https://tsitsieigen.atlassian.net")
@@ -166,15 +148,9 @@ if current_tab == "Data":
 
         if st.button("Fetch Data"):
             try:
-                # Connect to Jira using the provided credentials
                 jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
                 st.success("Connected to Jira successfully!")
-
-
-                # Fetch data using JQL query
-                issues = jira.search_issues(jql_query, maxResults=None)  # Adjust maxResults as needed
-
-                # Extract relevant data from issues
+                issues = jira.search_issues(jql_query, maxResults=None)
                 issues_data = []
                 for issue in issues:
                     issue_dict = {
@@ -182,27 +158,17 @@ if current_tab == "Data":
                         "Summary": issue.fields.summary,
                         "Status": issue.fields.status.name,
                         "Assignee": issue.fields.assignee.displayName if issue.fields.assignee else "Unassigned",
-                        # Add other fields as needed
                     }
                     issues_data.append(issue_dict)
 
-                # Convert to DataFrame for better visualization with Streamlit
                 df = pd.DataFrame(issues_data)
-                st.session_state['data_frame'] = df  # Store the dataframe in session state
+                st.session_state['data_frame'] = df
                 st.table(df)
-
-                # Display data in a table using Streamlit
-                st.table(df)
-
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+            profile_data_func(df)
+            similarity_func(df)
 
-
-                 # Add a button to compute similarity
-                if st.button("Compute Similarity"):
-                    # Compute similarity and display results
-                    # You can use the code provided in the previous response to compute similarity
-                    st.subheader("Similarity Results")
 
 
          
@@ -241,7 +207,7 @@ elif current_tab == "Chart Creation":
         # ChatGPT Integration Extender
         with st.expander("Use AI Assistance (LLM)"):
             # Create an input text box for user questions
-            user_question = st.text_input("Gain initial insights from data")
+            user_question = st.text_input("Enter your question:")
 
             if st.button("Submit"):
                 # Define the payload to send to Node-RED
@@ -261,6 +227,9 @@ elif current_tab == "Chart Creation":
                 st.write("Error communicating with ChatGPT")
         except Exception as e:
             st.write("An error occurred during the HTTP request:", str(e))
+
+
+
 
 
 
