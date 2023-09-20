@@ -17,6 +17,7 @@ import pandas as pd
 import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
+# ... Rest of your code ...
 
 
 
@@ -61,7 +62,6 @@ if 'session_state' not in st.session_state:
 session_state = st.session_state['session_state']
 
 st.title("Scrum Team Pulse")
-st.subheader("Make data talk")
 
 
 st.sidebar.title("Follow tabs")
@@ -71,8 +71,8 @@ current_tab = st.sidebar.radio("Select tab", tabs)
 
 
 tab_descriptions = {
-    "Data": "In the Data tab, you have the option to upload your project data, establish a connection to your Jira instance for real-time data retrieval, or utilize a sample dataset for exploratory purposes. Additionally, Pandas Profiling is available to facilitate comprehensive data understanding.",
-    "Column Selector": "The Column Selector tab allows you to rename and select columns for your analysis. Furthermore, you can update the data frame based on your selected columns and seamlessly continue your analysis with the new dataframe",
+    "Data": "In the Data tab, you can upload your project data or connect to your Jira instance to fetch real-time data.",
+    "Column Selector": "The Column Selector tab allows you to rename and select columns for your analysis.",
     "Chart Creation": "In the Chart Creation tab, you can create charts to visualize your project's progress using AI assistance or by creating charts yourself.",
     "Dashboard": "The Dashboard tab displays all the charts you've created, providing an overview of your project.",
     "Template Individual Performance": "This tab offers pre-designed charts and insights to assess individual performance.",
@@ -160,10 +160,10 @@ if current_tab == "Data":
 
 
     elif data_source == "Connect to Jira Instance":
-        jira_url = st.text_input("Jira URL", "https://ourJiraInstance.atlassian.net")
-        jira_email = st.text_input("Jira Email", "")
+        jira_url = st.text_input("Jira URL", "https://tsitsieigen.atlassian.net")
+        jira_email = st.text_input("Your email here", "")
         jira_token = st.text_input("Jira API Token", "", type="password")
-        jql_query = st.text_area("Enter JQL Query", " ")
+        jql_query = st.text_area("project=STOR", " ")
 
         if st.button("Fetch Data"):
             try:
@@ -171,43 +171,46 @@ if current_tab == "Data":
                 jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
                 st.success("Connected to Jira successfully!")
 
-                # Fetch data using JQL query
+
+                                # Fetch data using JQL query
                 issues = jira.search_issues(jql_query, maxResults=None)  # Adjust maxResults as needed
 
-                                # Add a button to compute similarity
+                # Extract relevant data from issues
+                issues_data = []
+                for issue in issues:
+                    issue_dict = {
+                        "Key": issue.key,
+                        "Summary": issue.fields.summary,
+                        "Status": issue.fields.status.name,
+                        "Assignee": issue.fields.assignee.displayName if issue.fields.assignee else "Unassigned",
+                        # Add other fields as needed
+                    }
+                    issues_data.append(issue_dict)
+
+                # Convert to DataFrame for better visualization with Streamlit
+                df = pd.DataFrame(issues_data)
+                st.session_state['data_frame'] = df  # Store the dataframe in session state
+                st.table(df)
+
+                # Display data in a table using Streamlit
+                st.table(df)
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+
+
+                 # Add a button to compute similarity
                 if st.button("Compute Similarity"):
                     # Compute similarity and display results
                     # You can use the code provided in the previous response to compute similarity
                     st.subheader("Similarity Results")
 
-            except Exception as e:
-                st.warning(f"Error fetching data from Jira: {e}")
-
-                # Convert Jira issues to a DataFrame
-                data = []
-                for issue in issues:
-                    # Customize the data extraction logic as per your requirements
-                    # Example: Extract issue key, summary, and assignee
-                    issue_data = {
-                        'Issue Key': issue.key,
-                        'Summary': issue.fields.summary,
-                        'Assignee': issue.fields.assignee.name  # Fix the typo here (change '.ame' to '.name')
-                        # Add more fields as needed
-                    }
-                    data.append(issue_data)
-
-                df = pd.DataFrame(data)
-                st.session_state['data_frame'] = df
-                st.write(df)
-                st.success("Data successfully fetched from Jira!")
-            except Exception as e:
-                st.warning(f"Error fetching data from Jira: {e}")
-
 
          
 elif current_tab == "Column Selector":
+    # Check if a data frame exists in the session state
     if 'data_frame' not in st.session_state:
-        st.info("Please upload data first in the 'Data Upload' tab.")
+        st.info("Please upload data in the 'Data Upload' tab, use the sample data, or connect to the Jira Instance first.")
     else:
         data_frame = st.session_state['data_frame']
 
@@ -218,9 +221,9 @@ elif current_tab == "Column Selector":
         column_to_rename = st.selectbox("Select Column", data_frame.columns)
         new_column_name = st.text_input("New Column Name", "")
         if new_column_name:
-            column_mapping = session_state.get_column_mapping()
+            column_mapping = session_state.get_column_mapping()  # Assuming you've a function or method for this
             column_mapping[column_to_rename] = new_column_name
-            session_state.set_column_mapping(column_mapping)
+            session_state.set_column_mapping(column_mapping)  # Assuming you've a function or method for this
 
         st.subheader("Select Columns")
         selected_columns = st.multiselect("Select Columns", data_frame.columns)
@@ -229,7 +232,6 @@ elif current_tab == "Column Selector":
             st.dataframe(new_data_frame)
             if st.button("Update Data Frame"):
                 st.session_state['data_frame'] = new_data_frame
-
 
 
 
@@ -249,16 +251,21 @@ elif current_tab == "Chart Creation":
                     "topic": ""
                 }
 
-                # Send a POST request to your Node-RED flow
-                response = requests.post("http://127.0.0.1:1880/chatgpt", json=payload)
+        try:
+            response = requests.post("http://127.0.0.1:1880/chatgpt", json=payload)
+            # Check the response status code and handle any errors here
+            if response.status_code == 200:
+                chatgpt_response = response.json()
+                answer = chatgpt_response["answer"]
+                st.write("ChatGPT's Answer:", answer)
+            else:
+                st.write("Error communicating with ChatGPT")
+        except Exception as e:
+            st.write("An error occurred during the HTTP request:", str(e))
 
-                # Check if the response was successful and display ChatGPT's response
-                if response.status_code == 200:
-                    chatgpt_response = response.json()
-                    answer = chatgpt_response["answer"]
-                    st.write("ChatGPT's Answer:", answer)
-                else:
-                    st.write("Error communicating with ChatGPT")
+
+
+
             # Inside the "Chart Creation" tab
             if st.button("Plot Chart"):
                 # Send a request to Node-RED to trigger the data manipulation and chart generation
