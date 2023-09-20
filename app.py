@@ -17,7 +17,6 @@ import pandas as pd
 import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
-# ... Rest of your code ...
 
 
 
@@ -172,7 +171,7 @@ if current_tab == "Data":
                 st.success("Connected to Jira successfully!")
 
 
-                                # Fetch data using JQL query
+                # Fetch data using JQL query
                 issues = jira.search_issues(jql_query, maxResults=None)  # Adjust maxResults as needed
 
                 # Extract relevant data from issues
@@ -242,7 +241,7 @@ elif current_tab == "Chart Creation":
         # ChatGPT Integration Extender
         with st.expander("Use AI Assistance (LLM)"):
             # Create an input text box for user questions
-            user_question = st.text_input("Enter your question:")
+            user_question = st.text_input("Gain initial insights from data")
 
             if st.button("Submit"):
                 # Define the payload to send to Node-RED
