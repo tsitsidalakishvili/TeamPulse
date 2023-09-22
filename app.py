@@ -62,6 +62,9 @@ if 'session_state' not in st.session_state:
 session_state = st.session_state['session_state']
 
 st.title("Scrum Team Pulse")
+st.header("Make Data Talk")
+
+
 
 
 st.sidebar.title("Follow tabs")
