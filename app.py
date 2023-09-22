@@ -241,7 +241,7 @@ elif current_tab == "Column Selector":
 
 elif current_tab == "Chart Creation":
     if 'data_frame' not in st.session_state:
-        st.info("Please upload data first in the 'Data Upload' tab.")
+        st.info("Please upload data first in the 'Data Upload' tab or use sample data.")
     else:
         # Display the data table
         data_frame = st.session_state['data_frame']
