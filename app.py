@@ -411,7 +411,7 @@ elif current_tab == "Template Individual Performance":
         # Check for required columns
         required_columns = ['Custom field (Story Points)', 'Sprint', 'Project name', 'Assignee', 'Time Spent', 'Issue Type', 'Component']
         if not all(col in df.columns for col in required_columns):
-            st.warning("Some required columns are missing in the uploaded data.")
+            st.warning("Load sample data to see dashboard. Some required columns are missing in the uploaded file.")
         else:
             # Derived columns
             df['days'] = df['Time Spent'] / 28800
