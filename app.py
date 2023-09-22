@@ -370,7 +370,7 @@ elif current_tab == "Dashboard":
 
 elif current_tab == "Template Team Performance":
     if 'data_frame' not in st.session_state:
-        st.info("Please upload data first in the 'Data Upload' tab or load sample data.")
+        st.info("Please upload data first in the 'Data Upload' tab or load sample data before accessing the examples.")
     else:
         data_frame = st.session_state['data_frame']
 
@@ -486,7 +486,9 @@ elif current_tab == "Template Individual Performance":
             st.plotly_chart(line_chart_avg_ratio, use_container_width=True)
 
     else:
-        st.warning("Please upload and process the data first before accessing the examples.")
+        st.info("Please upload data first in the 'Data Upload' tab or load sample data before accessing the examples.")
+
+
 
 
 
