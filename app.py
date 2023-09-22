@@ -195,14 +195,29 @@ if current_tab == "Data":
                     st.error('Error starting the flow.')
 
 
-         
+
+
 elif current_tab == "Column Selector":
-    # Check if a data frame exists in the session state
+    # Fetch data from Node-RED if it's not in session state
     if 'data_frame' not in st.session_state:
-        st.info("Please upload data in the 'Data Upload' tab, use the sample data, or connect to the Jira Instance first.")
+        try:
+            response = requests.get('http://127.0.0.1:1880/fetchTransformedData')
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list) and all(isinstance(item, dict) for item in data):
+                    st.session_state['data_frame'] = pd.DataFrame(data)
+                else:
+                    st.warning('Received unexpected data format from Node-RED.')
+            else:
+                st.error('Error fetching data from Node-RED.')
+        except Exception as e:
+            st.error(f"An error occurred while fetching data from Node-RED: {e}")
+
+    # Existing Data Frame Availability Check
+    if 'data_frame' not in st.session_state:
+        st.info("Please upload data in the 'Data Upload' tab, use the sample data, connect to the Jira Instance, or fetch data from Node-RED.")
     else:
         data_frame = st.session_state['data_frame']
-
         st.subheader("Data Table")
         st.dataframe(data_frame)
 
@@ -228,6 +243,11 @@ elif current_tab == "Chart Creation":
     if 'data_frame' not in st.session_state:
         st.info("Please upload data first in the 'Data Upload' tab.")
     else:
+        # Display the data table
+        data_frame = st.session_state['data_frame']
+        st.subheader("Data Table")
+        st.dataframe(data_frame)
+        
         # ChatGPT Integration Extender
         with st.expander("Use AI Assistance (LLM)"):
             # Create an input text box for user questions
@@ -239,7 +259,6 @@ elif current_tab == "Chart Creation":
                     "question": user_question,
                     "topic": ""
                 }
-
         try:
             response = requests.post("http://127.0.0.1:1880/chatgpt", json=payload)
             # Check the response status code and handle any errors here
@@ -251,9 +270,6 @@ elif current_tab == "Chart Creation":
                 st.write("Error communicating with ChatGPT")
         except Exception as e:
             st.write("An error occurred during the HTTP request:", str(e))
-
-
-
 
 
 
