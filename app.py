@@ -17,7 +17,7 @@ import pandas as pd
 import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
-# ... Rest of your code ...
+
 
 
 
@@ -140,35 +140,59 @@ if current_tab == "Data":
         profile_data_func(df)
         similarity_func(df)
 
+        
+
     elif data_source == "Connect to Jira Instance":
-        jira_url = st.text_input("Jira URL", "https://tsitsieigen.atlassian.net")
-        jira_email = st.text_input("Your email here", "")
-        jira_token = st.text_input("Jira API Token", "", type="password")
-        jql_query = st.text_area("project=STOR", " ")
+        with st.expander("Use JIra REST API"):
+            jira_url = st.text_input("Jira URL", "https://tsitsieigen.atlassian.net")
+            jira_email = st.text_input("Your email here", "")
+            jira_token = st.text_input("Jira API Token", "", type="password")
+            jql_query = st.text_area("", " ")
 
-        if st.button("Fetch Data"):
-            try:
-                jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
-                st.success("Connected to Jira successfully!")
-                issues = jira.search_issues(jql_query, maxResults=None)
-                issues_data = []
-                for issue in issues:
-                    issue_dict = {
-                        "Key": issue.key,
-                        "Summary": issue.fields.summary,
-                        "Status": issue.fields.status.name,
-                        "Assignee": issue.fields.assignee.displayName if issue.fields.assignee else "Unassigned",
-                    }
-                    issues_data.append(issue_dict)
+            if st.button("Fetch Data"):
+                try:
+                    jira = JIRA(server=jira_url, basic_auth=(jira_email, jira_token))
+                    st.success("Connected to Jira successfully!")
+                    issues = jira.search_issues(jql_query, maxResults=None)
+                    issues_data = []
+                    for issue in issues:
+                        issue_dict = {
+                            "Key": issue.key,
+                            "Summary": issue.fields.summary,
+                            "Status": issue.fields.status.name,
+                            "Assignee": issue.fields.assignee.displayName if issue.fields.assignee else "Unassigned",
+                        }
+                        issues_data.append(issue_dict)
 
-                df = pd.DataFrame(issues_data)
-                st.session_state['data_frame'] = df
-                st.table(df)
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-            profile_data_func(df)
-            similarity_func(df)
+                    df = pd.DataFrame(issues_data)
+                    st.session_state['data_frame'] = df
+                    st.table(df)
 
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+                #profile_data_func(df)
+                #similarity_func(df)
+
+
+        with st.expander("Use Node-Red flow"):
+
+            if st.button('Start Node-RED flow'):
+                response = requests.post('http://127.0.0.1:1880/triggerFlow')
+                if response.status_code == 200:
+                    st.write('Flow started successfully!')
+                    # Fetching the data immediately after triggering the flow
+                    data_response = requests.get('http://127.0.0.1:1880/fetchTransformedData')
+                    if data_response.status_code == 200:
+                        data = data_response.json()
+                        if isinstance(data, list) and all(isinstance(item, dict) for item in data):
+                            df = pd.DataFrame(data)
+                            st.write(df)
+                        else:
+                            st.warning('Received unexpected data format from Node-RED.')
+                    else:
+                        st.error('Error fetching the initial data.')
+                else:
+                    st.error('Error starting the flow.')
 
 
          
