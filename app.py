@@ -370,7 +370,7 @@ elif current_tab == "Dashboard":
 
 elif current_tab == "Template Team Performance":
     if 'data_frame' not in st.session_state:
-        st.info("Please upload data first in the 'Data Upload' tab.")
+        st.info("Please upload data first in the 'Data Upload' tab or load sample data.")
     else:
         data_frame = st.session_state['data_frame']
 
@@ -411,7 +411,8 @@ elif current_tab == "Template Individual Performance":
         # Check for required columns
         required_columns = ['Custom field (Story Points)', 'Sprint', 'Project name', 'Assignee', 'Time Spent', 'Issue Type', 'Component']
         if not all(col in df.columns for col in required_columns):
-            st.warning("Load sample data to see dashboard. Some required columns are missing in the uploaded file.")
+            st.info("Please upload data first in the 'Data Upload' tab or load sample data.")
+
         else:
             # Derived columns
             df['days'] = df['Time Spent'] / 28800
