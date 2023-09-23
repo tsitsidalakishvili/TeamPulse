@@ -17,7 +17,7 @@ import pandas as pd
 import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
-
+import neo4j
 from neo4j import GraphDatabase, basic_auth
 def create_neo4j_driver():
     return GraphDatabase.driver(
