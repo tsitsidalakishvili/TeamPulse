@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import pandas_profiling  # Import pandas-profiling
+#import pandas_profiling  # Import pandas-profiling
 import plotly.express as px
 import numpy as np
 from jira import JIRA
@@ -13,16 +13,63 @@ from similarity import preprocess_data, calculate_similarity
 import requests
 import subprocess
 import pandas as pd
+from neo4j import GraphDatabase, basic_auth
 
-import streamlit_pandas_profiling
-from streamlit_pandas_profiling import st_profile_report
+
+#import streamlit_pandas_profiling
+#from streamlit_pandas_profiling import st_profile_report
 
 import neo4j
-from neo4j import GraphDatabase, basic_auth
+# Import Neo4jManager class
+from neo4j_integration import Neo4jManager
+
+import io  # Import the 'io' module for working with byte streams
+
+import csv
+# Function to create nodes from CSV
+
+
+
+def create_nodes_from_csv(neo4j_manager, uploaded_file, label):
+    # Check if a file was uploaded
+    if uploaded_file is not None:
+        # Read the uploaded CSV file as bytes
+        file_contents = uploaded_file.read()
+
+        # Convert the bytes to a string (assuming UTF-8 encoding)
+        csv_content = file_contents.decode('utf-8')
+
+        # Use 'io.StringIO' to create a file-like object from the string
+        csv_file = io.StringIO(csv_content)
+
+        # Now, you can read the CSV data from the 'csv_file' file-like object
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            try:
+                # Attempt to convert 'Issue key' to an integer
+                issue_key = int(row['Issue key'])
+            except ValueError:
+                # Handle the case where 'Issue key' is not a valid integer
+                st.warning(f"Skipping row with invalid 'Issue key': {row}")
+                continue
+
+            # Assuming your CSV has columns like 'name', 'age', 'city'
+            properties = {
+                'Assignee': row['Assignee'],
+                'Issue key': int(row['age']),
+                'city': row['city']
+            }
+            neo4j_manager.create_node(label, properties)
+    else:
+        st.warning("Please upload a CSV file before creating nodes.")
+
+            
+
+
 def create_neo4j_driver():
     return GraphDatabase.driver(
-        "bolt://18.214.15.191:7687",  # Update with your Neo4j hostname and port
-        auth=basic_auth("neo4j", "budget-transportation-subsystem")  # Replace with your Neo4j username and password
+        "bolt://3.86.204.9:7687",  # Update with your Neo4j hostname and port
+        auth=basic_auth("neo4j", "preference-transaction-revision")  # Replace with your Neo4j username and password
     )
 
 
@@ -84,7 +131,7 @@ st.title("Make Data Talk")
 
 st.sidebar.title("Follow tabs")
 
-tabs = ["Data", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
+tabs = ["Data Source", "Column Selector", "Chart Creation", "Dashboard", "Template Individual Performance", "Template Team Performance"]
 current_tab = st.sidebar.radio("Select tab", tabs)
 
 
@@ -137,8 +184,8 @@ def similarity_func(df):
             st.subheader(f"Similarity Threshold: {threshold}")
             st.dataframe(similar_pairs)
 
-if current_tab == "Data":
-    data_source = st.radio("Choose Data Source", ["Upload CSV", "Use Sample Data", "Connect to Jira Instance"])
+if current_tab == "Data Source":
+    data_source = st.radio("Choose Data Source", ["Upload CSV", "Use Sample Data", "Connect to Jira Instance", "Neo4j"])
 
     if data_source == "Upload CSV":
         uploaded_file = st.file_uploader("Upload CSV File", type=['csv'])
@@ -157,8 +204,60 @@ if current_tab == "Data":
         st.success("Sample data loaded successfully!")
         profile_data_func(df)
         similarity_func(df)
+        
+    elif data_source == "Neo4j":
+        st.title("Create Neo4j Model")
+
+        # Get Neo4j connection details from the user
+        neo4j_uri = st.text_input("Neo4j URI")
+        neo4j_username = st.text_input("Neo4j Username")
+        neo4j_password = st.text_input("Neo4j Password", type="password")
+
+        # Allow the user to upload a CSV file
+        uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+
+        if uploaded_file:
+            if neo4j_uri and neo4j_username and neo4j_password:
+                # Create a Neo4jManager instance with user-provided credentials
+                neo4j_manager = Neo4jManager(neo4j_uri, neo4j_username, neo4j_password)
+
+                # Create nodes from the uploaded CSV file
+                label = "Person"  # Set the label for the nodes
+                create_nodes_from_csv(neo4j_manager, uploaded_file, label)
+
+                # Close the Neo4j connection
+                neo4j_manager.close()
+
+                st.success("Nodes created successfully!")
+            else:
+                st.warning("Please provide Neo4j connection details (URI, username, and password) to create nodes.")
+
+
+
+
+        st.subheader("Neo4j Cypher Query")
+
+        cypher_query = st.text_area("Enter Cypher Query")
+
+        if st.button("Execute Cypher Query"):
+            if cypher_query:
+                #Execute the query
+                with create_neo4j_driver() as driver:
+                    results = execute_cypher_query(driver, cypher_query)
+                #Display the results
+                if results:
+                    st.subheader("Query Results")
+                    st.write(results)
+                else:
+                    st.warning("No results returned.")
+            else:
+                st.warning("Please enter a Cypher query.")
+
 
         
+            
+
+
 
     elif data_source == "Connect to Jira Instance":
         with st.expander("Use JIra REST API"):
@@ -214,25 +313,7 @@ if current_tab == "Data":
 
 
 
-st.subheader("Neo4j Cypher Query")
 
-# Input field for Cypher query
-cypher_query = st.text_area("Enter Cypher Query")
-
-# Button to execute the query
-if st.button("Execute Cypher Query"):
-    if cypher_query:
-        # Execute the query
-        with create_neo4j_driver() as driver:
-            results = execute_cypher_query(driver, cypher_query)
-        # Display the results
-        if results:
-            st.subheader("Query Results")
-            st.write(results)
-        else:
-            st.warning("No results returned.")
-    else:
-        st.warning("Please enter a Cypher query.")
 
 
 
@@ -276,7 +357,6 @@ elif current_tab == "Column Selector":
             st.dataframe(new_data_frame)
             if st.button("Update Data Frame"):
                 st.session_state['data_frame'] = new_data_frame
-
 
 
 elif current_tab == "Chart Creation":
