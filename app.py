@@ -18,6 +18,22 @@ import streamlit_pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
 
+from neo4j import GraphDatabase, basic_auth
+def create_neo4j_driver():
+    return GraphDatabase.driver(
+        "bolt://18.214.15.191:7687",  # Update with your Neo4j hostname and port
+        auth=basic_auth("neo4j", "budget-transportation-subsystem")  # Replace with your Neo4j username and password
+    )
+
+
+def execute_cypher_query(driver, cypher_query, params=None):
+    with driver.session() as session:
+        result = session.run(cypher_query, params)
+        return result.data()
+
+
+
+
 
 
 
@@ -195,6 +211,28 @@ if current_tab == "Data":
                         st.error('Error fetching the initial data.')
                 else:
                     st.error('Error starting the flow.')
+
+
+
+st.subheader("Neo4j Cypher Query")
+
+# Input field for Cypher query
+cypher_query = st.text_area("Enter Cypher Query")
+
+# Button to execute the query
+if st.button("Execute Cypher Query"):
+    if cypher_query:
+        # Execute the query
+        with create_neo4j_driver() as driver:
+            results = execute_cypher_query(driver, cypher_query)
+        # Display the results
+        if results:
+            st.subheader("Query Results")
+            st.write(results)
+        else:
+            st.warning("No results returned.")
+    else:
+        st.warning("Please enter a Cypher query.")
 
 
 
