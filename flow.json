@@ -1,0 +1,320 @@
+[
+    {
+        "id": "225cb891821a4297",
+        "type": "tab",
+        "label": "Working - Combine extracted jira fields and user question from Streamlit",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "dd5ff02ba46eb580",
+        "type": "function",
+        "z": "225cb891821a4297",
+        "name": "extract jira fields",
+        "func": "var issues = msg.payload.issues.map(issue => ({\n    summary: issue?.fields?.summary ?? null,\n    issueKey: issue?.key ?? null,\n    status: issue?.fields?.status?.name ?? null,\n    resolved: issue?.fields?.resolutiondate ?? null,\n    epicLinkSummary: issue?.fields?.customfield_10001 ?? null,\n    labels: issue?.fields?.labels ?? [],\n    priority: issue?.fields?.priority?.name ?? null,\n    issueType: issue?.fields?.issuetype?.name ?? null,\n    assignee: issue?.fields?.assignee?.displayName ?? null,\n    creator: issue?.fields?.creator?.displayName ?? null,\n    sprint: Array.isArray(issue?.fields?.customfield_10010) && issue.fields.customfield_10010.length > 0 ? issue.fields.customfield_10010[0]?.name : null,\n    created: issue?.fields?.created ?? null,\n    resolution: issue?.fields?.resolution?.name ?? null,\n    storyPoints: issue?.fields?.customfield_10014 ?? null,\n    coreTimeActivity: issue?.fields?.customfield_10040?.value ?? null,\n    coreTimeClient: issue?.fields?.customfield_10091?.value ?? null,\n    coreTimePhase: issue?.fields?.customfield_10043?.value ?? null,\n    coreTimeProject: issue?.fields?.customfield_10041?.value ?? null,\n}));\n\nmsg.payload = issues;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 40,
+        "wires": [
+            [
+                "f564245a2539fd36"
+            ]
+        ]
+    },
+    {
+        "id": "c2a64fafd8cafacb",
+        "type": "http in",
+        "z": "225cb891821a4297",
+        "name": "ChatGPT Input",
+        "url": "/chatgpt",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 100,
+        "y": 400,
+        "wires": [
+            [
+                "072b2e9a272785ed"
+            ]
+        ]
+    },
+    {
+        "id": "072b2e9a272785ed",
+        "type": "function",
+        "z": "225cb891821a4297",
+        "name": "Extract User's Question",
+        "func": "var question = msg.payload.question;\nflow.set(\"userQuestion\", question);  // Store to flow context\n\n// Create a payload for ChatGPT request\nmsg.payload = {\n    \"model\": \"gpt-3.5-turbo\",\n    \"messages\": [\n        { \"role\": \"user\", \"content\": question }\n    ],\n    \"temperature\": 0.7\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 400,
+        "wires": [
+            [
+                "1787f3973fb9cec3"
+            ]
+        ]
+    },
+    {
+        "id": "51749af75f4670da",
+        "type": "http response",
+        "z": "225cb891821a4297",
+        "name": "ChatGPT Response",
+        "statusCode": "200",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "x": 1140,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "ea9f9ea7c342894d",
+        "type": "http request",
+        "z": "225cb891821a4297",
+        "name": "Call OpenAI API",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "Authorization",
+                "valueType": "other",
+                "valueValue": "Bearer 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"
+            }
+        ],
+        "x": 580,
+        "y": 500,
+        "wires": [
+            [
+                "58b73f8c35282020"
+            ]
+        ]
+    },
+    {
+        "id": "1787f3973fb9cec3",
+        "type": "function",
+        "z": "225cb891821a4297",
+        "name": "Format payload & Create combined message to send OpenAI API",
+        "func": "// Extract and store the user's question from the input payload\nvar question = msg.payload.question;\nflow.set(\"userQuestion\", question);\n\n// Retrieve the stored data from the flow context\nvar userQuestion = flow.get(\"userQuestion\");\nvar jiraData = flow.get(\"jiraData\");\n\n// Create a combined message\nvar combinedMessage;\nif (jiraData) {\n    combinedMessage = `Question: ${userQuestion}\\nJIRA Data: ${jiraData}`;\n} else {\n    combinedMessage = `Question: ${userQuestion}`;\n}\n\n// Format the payload for OpenAI API\nmsg.payload = {\n    \"model\": \"gpt-3.5-turbo\",\n    \"messages\": [\n        { \"role\": \"user\", \"content\": combinedMessage }\n    ],\n    \"temperature\": 0.7\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 400,
+        "wires": [
+            [
+                "ea9f9ea7c342894d"
+            ]
+        ]
+    },
+    {
+        "id": "f564245a2539fd36",
+        "type": "file",
+        "z": "225cb891821a4297",
+        "name": "Write data.txt",
+        "filename": "C:\\Users\\Tsitsi\\Desktop\\data.txt",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": false,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 65,
+        "y": 220,
+        "wires": [
+            [
+                "e7dd03f7506ded72"
+            ]
+        ],
+        "l": false
+    },
+    {
+        "id": "e7dd03f7506ded72",
+        "type": "file in",
+        "z": "225cb891821a4297",
+        "name": "read data.txt",
+        "filename": "C:\\Users\\Tsitsi\\Desktop\\data.txt",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 170,
+        "y": 220,
+        "wires": [
+            [
+                "edafb591779d2071"
+            ]
+        ]
+    },
+    {
+        "id": "edafb591779d2071",
+        "type": "function",
+        "z": "225cb891821a4297",
+        "name": "processes and stores this data into the flow context",
+        "func": "\n// Function node to store JIRA data from data.txt into flow context\nvar issues = msg.payload;\nflow.set(\"jiraData\", issues);\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 220,
+        "wires": [
+            [
+                "7738c2ca1d529782",
+                "1787f3973fb9cec3"
+            ]
+        ]
+    },
+    {
+        "id": "58b73f8c35282020",
+        "type": "function",
+        "z": "225cb891821a4297",
+        "name": "Process the output of the OpenAI API call",
+        "func": "const content = msg.payload.choices[0].message.content;\nmsg.payload = { answer: content };\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 500,
+        "wires": [
+            [
+                "51749af75f4670da",
+                "69ec747711253ed2"
+            ]
+        ]
+    },
+    {
+        "id": "dbac4da4a36538d7",
+        "type": "http in",
+        "z": "225cb891821a4297",
+        "name": "Start from Streamlit",
+        "url": "/triggerFlow",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 130,
+        "y": 40,
+        "wires": [
+            [
+                "3d9b5ba59bbb601e"
+            ]
+        ]
+    },
+    {
+        "id": "f108753883ec9ff7",
+        "type": "http response",
+        "z": "225cb891821a4297",
+        "name": "",
+        "statusCode": "200",
+        "headers": {
+            "content-type": "application/json"
+        },
+        "x": 1120,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "0d51a896feeb03c4",
+        "type": "http in",
+        "z": "225cb891821a4297",
+        "name": "",
+        "url": "/fetchTransformedData",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 620,
+        "y": 160,
+        "wires": [
+            [
+                "7738c2ca1d529782"
+            ]
+        ]
+    },
+    {
+        "id": "7738c2ca1d529782",
+        "type": "function",
+        "z": "225cb891821a4297",
+        "name": "Prepare and send dataset to streamlit",
+        "func": "// Fetch the stored Jira data from flow context\nmsg.payload = flow.get(\"jiraData\");\nreturn msg;\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 220,
+        "wires": [
+            [
+                "f108753883ec9ff7"
+            ]
+        ]
+    },
+    {
+        "id": "3d9b5ba59bbb601e",
+        "type": "http request",
+        "z": "225cb891821a4297",
+        "name": "Call Jira API",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://tsitsieigen.atlassian.net/rest/api/2/search?jql=project = STOR AND issuetype = Epic ORDER BY created DESC",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "basic",
+        "senderr": false,
+        "headers": [],
+        "x": 370,
+        "y": 40,
+        "wires": [
+            [
+                "dd5ff02ba46eb580"
+            ]
+        ]
+    },
+    {
+        "id": "69ec747711253ed2",
+        "type": "debug",
+        "z": "225cb891821a4297",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1220,
+        "y": 420,
+        "wires": []
+    }
+]
