@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-#import pandas_profiling  # Import pandas-profiling
+import pandas_profiling  # Import pandas-profiling
 import plotly.express as px
 import numpy as np
 from jira import JIRA
@@ -16,8 +16,8 @@ import pandas as pd
 from neo4j import GraphDatabase, basic_auth
 
 
-#import streamlit_pandas_profiling
-#from streamlit_pandas_profiling import st_profile_report
+import streamlit_pandas_profiling
+from streamlit_pandas_profiling import st_profile_report
 
 import neo4j
 # Import Neo4jManager class
